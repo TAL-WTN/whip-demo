@@ -115,6 +115,7 @@ dist
 # production
 /build
 
+/whip-react-sdk
 # misc
 .DS_Store
 .env.local
