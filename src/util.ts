@@ -1,7 +1,7 @@
 // Copyright 2022 ByteDance Ltd. and/or its affiliates.
 // SPDX-License-Identifier: BSD-3-Clause
 
-import { sign } from "jsonwebtoken";
+import { SignJWT } from "jose";
 export interface TokenParameters {
   AppID: string;
   StreamID: string;
@@ -29,13 +29,13 @@ export async function generateToken({
   if (Action === "pub") {
     payload.enableSubAuth = !!PullAuth;
   }
-  return sign(payload, AppKey || "", {
-    noTimestamp: true,
-    header: {
-      typ: "JWT",
+  const textEncoder = new TextEncoder();
+  return await new SignJWT(payload)
+    .setProtectedHeader({
       alg: "HS256",
-    }
-  });
+      typ: "JWT",
+    })
+    .sign(textEncoder.encode(AppKey));
 }
 
 // 解析URL参数
