@@ -1,3 +1,0 @@
-[submodule "whip-react-sdk"]
-	path = whip-sdk
-	url = git@github.com:tomatoFQ/whip-sdk-react.git

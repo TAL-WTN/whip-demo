@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {
   Button,
   Space,
@@ -8,13 +8,17 @@ import {
   PageHeader,
 } from "@arco-design/web-react";
 import { v4 as uuid } from "uuid";
-import { getUrlPrmt } from './util';
+import {generateToken, getUrlPrmt} from './util';
+// import {useSubscribe} from './whip-sdk-react/dist/index';
+// import useSubscribe from './UseSubscribe';
+import Subscriber from './Subscriber';
 import './App.css';
+import getToken from './getToken';
 
 function App() {
   const queryObject = getUrlPrmt();
 
-  const [ mode, setMode ] = useState("push");
+  const [ mode, setMode ] = useState("pull");
   const [ Domain, setDomain ] = useState(queryObject.Domain || window.location.host);
   const [ AppID, setAppID ] = useState(queryObject.AppID || "bc22d5");
   const [ AppKey, setAppKey ] = useState(queryObject.AppKey || "00eec858271ea752");
@@ -38,7 +42,24 @@ function App() {
   const [ parameter, setParameter ] = useState("");
   const [ requestList, setRequestList ] = useState([]);
   const [ errorMessage, setErrorMessage ] = useState("");
+  const [ token, setToken ] = useState<string>();
 
+  const startPull = useCallback(async () => {
+    const pullToken = await generateToken({AppID, AppKey, StreamID, Action: 'sub'});
+    setToken(pullToken);
+    setVisibility(true);
+  }, [AppID, AppKey, StreamID]);
+
+  const handleMute = useCallback((mute: boolean, kind: 'video' | 'audio') => {
+    switch (kind) {
+      case 'video':
+        setMuteVideo(mute);
+        break;
+      case 'audio':
+        setMuteAudio(mute);
+        break;
+    }
+  }, [StreamID]);
   return (
     <div className="Page">
       <PageHeader title="Welcome to the WTN Demo" className="Header" />
@@ -99,7 +120,6 @@ function App() {
                 value={StreamID}
                 onChange={(v) => setStreamID(v)}
                 placeholder="StreamID"
-                allowClear
               />
               <Button
                 id="StreamID_Random"
@@ -118,7 +138,6 @@ function App() {
                 value={SessionID}
                 onChange={(v) => setSessionID(v)}
                 placeholder="SessionID"
-                allowClear
               />
               <Button
                 id="SessionID_Random"
@@ -128,26 +147,6 @@ function App() {
               </Button>
               {/* </Space> */}
             </div>
-            <div>
-              <Space>
-                PullAuth：
-                <Switch
-                  id="pullAuthentication"
-                  checked={PullAuth}
-                  onChange={(v) => setPullAuth(v)}
-                />
-                <span>|</span>
-                ClientIP:
-                <Input
-                  id="ClientIP"
-                  style={{ width: 150 }}
-                  value={ClientIp}
-                  onChange={(v) => setClientIp(v)}
-                  placeholder="ClientIp"
-                  allowClear
-                />
-              </Space>
-            </div>
             {mode === "push" ? (
               <Space direction="vertical">
                 <Space>
@@ -156,7 +155,7 @@ function App() {
                     disabled={visibility}
                     type="primary"
                     onClick={() => {
-                      this.startPush();
+                      // this.startPush();
                     }}
                   >
                     StartPush
@@ -166,7 +165,7 @@ function App() {
                     disabled={!visibility}
                     status="danger"
                     onClick={() => {
-                      this.stop();
+                      // this.stop();
                     }}
                   >
                     StopPush
@@ -204,7 +203,7 @@ function App() {
                   disabled={visibility}
                   type="primary"
                   onClick={() => {
-                    this.startPull();
+                    startPull();
                   }}
                 >
                   Start Pull
@@ -214,7 +213,9 @@ function App() {
                   disabled={!visibility}
                   status="danger"
                   onClick={() => {
-                    this.stop();
+                    setToken(undefined);
+                    setVisibility(false);
+                    // subscriber && subscriber.stop();
                   }}
                 >
                   Stop Pull
@@ -237,10 +238,12 @@ function App() {
             marginTop: -55,
           }}
         >
-          <div
-            style={{ width: 480, height: 375, marginTop: -5 }}
-            ref={(r) => (this.videoRenderDom = r)}
-          ></div>
+          {/*<div*/}
+          {/*  style={{ width: 480, height: 375, marginTop: -5 }}*/}
+          {/*  // ref={(r) => (this.videoRenderDom = r)}*/}
+          {/*></div>*/}
+          {token && mode === 'pull' ? <Subscriber token={token} MuteVideo={MuteVideo} MuteAudio={MuteAudio}/> : <></>}
+
           <div style={{ width: 200, height: 360 }}>
             <div
               className="Video-info"
@@ -254,25 +257,24 @@ function App() {
               <p>
                 <b>Info: </b>
               </p>
-              <p id="ICE">Conn State：{this.state.iceState}</p>
-              <p id="DTLS">DTLS State：{this.state.dtlsVideoState}</p>
+              <p id="ICE">Conn State：{iceState}</p>
               <p id="Resolution">
                 Resolution：
-                {this.state.resolution === "undefined*undefined"
+                {resolution === "undefined*undefined"
                   ? "读取中"
-                  : this.state.resolution}
+                  : resolution}
               </p>
               <p id="FrameRate">
                 Frame Rate：
-                {this.state.frameRate === "undefined"
+                {frameRate === "undefined"
                   ? "读取中"
-                  : this.state.frameRate}
+                  : frameRate}
               </p>
-              <p id="VideoBitrate">Video Bitrate：{this.state.codeRate}</p>
-              <p id="Volume">Volume：{this.state.volume}</p>
+              <p id="VideoBitrate">Video Bitrate：{codeRate}</p>
+              <p id="Volume">Volume：{volume}</p>
               <p id="ErrorMessage" style={{ color: "red" }}>
-                {this.state.errorMessage
-                  ? `错误信息：${this.state.errorMessage}`
+                {errorMessage
+                  ? `错误信息：${errorMessage}`
                   : ""}
               </p>
             </div>
@@ -284,16 +286,7 @@ function App() {
                 id="MuteVideo"
                 checked={MuteVideo}
                 onChange={async (v) => {
-                  this.setState({ MuteVideo: v });
-                  const { MuteAudio } = this.state;
-                  if (this.state.dtlsVideoState === "connected") {
-                    const unlock = await this._pubLock.lock();
-                    updateRequest(this.location!, {
-                      MuteAudio,
-                      MuteVideo: v,
-                    });
-                    unlock();
-                  }
+                  handleMute(v, 'video');
                 }}
               ></Switch>
               MuteAudio：
@@ -301,16 +294,7 @@ function App() {
                 id="MuteAudio"
                 checked={MuteAudio}
                 onChange={async (v) => {
-                  this.setState({ MuteAudio: v });
-                  const { MuteVideo } = this.state;
-                  if (this.state.dtlsVideoState === "connected") {
-                    const unlock = await this._pubLock.lock();
-                    updateRequest(this.location!, {
-                      MuteAudio: v,
-                      MuteVideo,
-                    });
-                    unlock();
-                  }
+                  handleMute(v, 'audio');
                 }}
               ></Switch>
             </Space>
