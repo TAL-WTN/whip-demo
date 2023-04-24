@@ -128,12 +128,16 @@ export async function getAudioStats(pc: RTCPeerConnection, track: MediaStreamTra
 
 const videoStatsMap = new Map();
 export async function getVideoStats(pc: RTCPeerConnection, track: MediaStreamTrack) {
-  const prev = videoStatsMap.get(track);
+  const prev = videoStatsMap.get(track) || {
+    timestamp: 0,
+    headerBytesSent: 0,
+    bytesSent: 0
+  };
   const stats = await pc.getStats(track);
   const result = {
     resolution: '',
     fps: '',
-    vbps: 0
+    vbps: '0 Kbps'
   };
   stats.forEach((report) => {
     if (report.type === "outbound-rtp") {
@@ -141,7 +145,7 @@ export async function getVideoStats(pc: RTCPeerConnection, track: MediaStreamTra
       result.fps = report.framesPerSecond;
 
       const duration = report.timestamp - prev.timestamp;
-      result.vbps = Math.floor(8* (report.bytesSent + report.headerBytesSent - prev.bytesSent - prev.headerBytesSent) / duration);
+      result.vbps = Math.floor(8* (report.bytesSent + report.headerBytesSent - prev.bytesSent - prev.headerBytesSent) / duration) + ' Kbps';
       videoStatsMap.set(track, report);
     }
   });
