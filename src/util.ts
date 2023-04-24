@@ -90,3 +90,60 @@ export class PromiseLock {
     return willUnlock;
   }
 }
+
+export function playVideo(videoRenderDom: HTMLDivElement, stream: MediaStream) {
+  const videoDom = document.createElement("video");
+  videoDom.srcObject = stream;
+  videoDom.muted = true;
+  videoDom.setAttribute("muted", "");
+  videoDom.play();
+  videoDom.height = 375;
+  videoDom.width = 480;
+  videoRenderDom?.appendChild(videoDom);
+  document.body.addEventListener("click", () => {
+    if (videoDom.paused) {
+      videoDom.play();
+    }
+  });
+}
+
+export async function sleep(timeout: number) {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, timeout)
+  })
+}
+
+export async function getAudioStats(pc: RTCPeerConnection, track: MediaStreamTrack) {
+  const stats = await pc.getStats(track);
+  const result = {
+    volume: '0'
+  };
+  stats.forEach((report) => {
+    if (report.type === "media-source") {
+      result.volume = Number((report.audioLevel ? report.audioLevel : 0) * 255).toFixed(6);
+    }
+  });
+  return result;
+}
+
+const videoStatsMap = new Map();
+export async function getVideoStats(pc: RTCPeerConnection, track: MediaStreamTrack) {
+  const prev = videoStatsMap.get(track);
+  const stats = await pc.getStats(track);
+  const result = {
+    resolution: '',
+    fps: '',
+    vbps: 0
+  };
+  stats.forEach((report) => {
+    if (report.type === "outbound-rtp") {
+      result.resolution = String(report.frameWidth) + "*" + String(report.frameHeight);
+      result.fps = report.framesPerSecond;
+
+      const duration = report.timestamp - prev.timestamp;
+      result.vbps = Math.floor(8* (report.bytesSent + report.headerBytesSent - prev.bytesSent - prev.headerBytesSent) / duration);
+      videoStatsMap.set(track, report);
+    }
+  });
+  return result;
+}
