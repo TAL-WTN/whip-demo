@@ -5,6 +5,7 @@
 .App-page{
   width: calc(100% - 21px);
   height: 100%;
+  background: #302c2c;
 }
 .Page {
   width: 100%;
@@ -28,9 +29,11 @@
   padding: 0px 20px;
 }
 
-.Contrainer-left{
+.Contrainer-bottom{
   width: 500px;
-  height: 420px;
+  height: 40px;
+  margin-top: 10px;
+  margin-left: 10px;
 }
 
 .Contrainer-right{
@@ -38,9 +41,9 @@
   width: calc(100% - 550px);
   min-width: 500px;
   height: 420px;
-  display: "flex";
-  flex-wrap: "wrap";
-  margin-left: -50;
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -50px;
   background-color: antiquewhite;
 }
 
@@ -52,9 +55,14 @@
 
 .Video-info{
   position: absolute;
+  margin-top: 0;
+  margin-left: 20px;
+  padding: 0 10px 10px;
+  color: #FFF;
 }
 
 .renderDom{
   width: 100%;
   height: 100%;
+  background: #000;
 }
