@@ -1,49 +1,96 @@
-import { useState, useEffect, useMemo } from 'react';
+import {useState, useEffect, useMemo, useCallback} from 'react';
 import {
   PageHeader,
-  Grid, Input, Space,
+  Grid, Input, Space, Button,
 } from '@arco-design/web-react';
 import { v4 as uuid } from "uuid";
 import { generateToken, getUrlPrmt } from './util';
 import Publisher from './Publisher';
 import Subscriber from './Subscriber';
-import {IconRefresh} from '@arco-design/web-react/icon';
+import {IconRefresh, IconVideoCamera, IconVoice} from '@arco-design/web-react/icon';
 
 import './App.css';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
 
+enum PushState {
+  stopped,
+  pushing,
+  pushed,
+}
+
+enum PullState {
+  stopped,
+  pulling,
+  pulled,
+}
+
 function App() {
   const queryObject = getUrlPrmt();
 
-  const [ mode, setMode ] = useState(queryObject.mode || "push");
   const [ AppID, setAppID ] = useState(queryObject.AppID || "bc22d5");
   const [ AppKey, setAppKey ] = useState(queryObject.AppKey || "00eec858271ea752");
   const [ StreamID, setStreamID ] = useState(queryObject.StreamID || uuid());
   const [ pubToken, setPubToken ] = useState("");
   const [ subToken, setSubToken ] = useState("");
+  const [ pushState, setPushState ] = useState<PushState>(PushState.stopped);
+  const [ pullState, setPullState ] = useState<PullState>(PullState.stopped);
+  const [ muteLocalVideo, setMuteLocalVideo ] = useState(false);
+  const [ muteLocalAudio, setMuteLocalAudio ] = useState(false);
+  const [ muteRemoteVideo, setMuteRemoteVideo ] = useState(false);
+  const [ muteRemoteAudio, setMuteRemoteAudio ] = useState(false);
 
-
-  useEffect(() => {
-    if (mode === 'push') {
-      generateToken({
-        AppID,
-        StreamID,
-        Action: "pub",
-        PullAuth: true,
-        AppKey,
-      }).then((token) => setPubToken(token))
-    } else {
-      generateToken({
-        AppID,
-        StreamID,
-        Action: "sub",
-        AppKey,
-      }).then((token) => setSubToken(token))
+  const handleMuteRemote = useCallback((mute: boolean, kind: 'video' | 'audio') => {
+    switch (kind) {
+      case 'video':
+        setMuteRemoteVideo(mute);
+        break;
+      case 'audio':
+        setMuteRemoteAudio(mute);
+        break;
     }
+  }, []);
+  const handleMuteLocal = useCallback((mute: boolean, kind: 'video' | 'audio') => {
+    switch (kind) {
+      case 'video':
+        setMuteLocalVideo(mute);
+        break;
+      case 'audio':
+        setMuteLocalAudio(mute);
+        break;
+    }
+  }, []);
 
-  }, [AppID, StreamID, AppKey, mode])
+  const handlePubBtnClick = useCallback(() => {
+    setPushState(PushState.pushing);
+    generateToken({
+      AppID,
+      StreamID,
+      Action: "pub",
+      PullAuth: true,
+      AppKey,
+    }).then((token) => {
+      setPubToken(token);
+      setPushState(PushState.pushed);
+    }).catch(() => {
+      setPushState(PushState.stopped);
+    })
+  }, []);
+  const handleSubBtnClick = useCallback(() => {
+    setPushState(PushState.pushing);
+    generateToken({
+      AppID,
+      StreamID,
+      Action: "sub",
+      AppKey,
+    }).then((token) => {
+      setSubToken(token);
+      setPushState(PushState.pushed);
+    }).catch(() => {
+      setPushState(PushState.stopped);
+    })
+  }, []);
   return (
     <div className="Page">
       <PageHeader title="Welcome to the WTN Demo" className="Header" style={{color: '#FFF'}} />
@@ -64,19 +111,58 @@ function App() {
       <Space direction='vertical' />
 
       <Row justify='center'>
-
-        {
-          pubToken ?
-            <Col style={{border: '1px solid #FFF'}} span={8} >
-              <Publisher appId={AppID} streamId={StreamID} appKey={AppKey} token={pubToken}></Publisher>
-            </Col> : <></>
-        }
-        {
-          subToken || true ?
-          <Col style={{border: '1px solid #FFF'}} span={8} offset={1}>
-            <Subscriber appId={AppID} streamId={StreamID} appKey={AppKey} token={subToken}></Subscriber>
-          </Col> : <></>
-        }
+        <Col span={8} >
+          <div className="Stream-container" id="publish">
+            <div className="Video-container">
+              {pubToken && <Publisher appId={AppID} streamId={StreamID} appKey={AppKey} token={pubToken}></Publisher>}
+            </div>
+            <Space className="Button-mute-group">
+              <IconVideoCamera style={{fontSize: 36, color: muteLocalVideo ? '#b6b6b6' : '#FFF'}}
+                 onClick={() => {
+                   handleMuteLocal(!muteLocalVideo, 'video');
+                 }}
+              />
+              <IconVoice style={{fontSize: 30, color: muteLocalAudio ? '#b6b6b6' : '#FFF'}}
+               onClick={() => {
+                 handleMuteLocal(!muteLocalAudio, 'audio');
+               }}
+              />
+            </Space>
+            <div className="Contrainer-bottom">
+              <Space direction="horizontal" size="medium">
+                <Button className="Button-push" type="primary" onClick={handlePubBtnClick} disabled={pushState === PushState.pushing}>
+                  {pushState === PushState.pushed ? 'Stop Push' : 'Start Push'}
+                </Button>
+              </Space>
+            </div>
+          </div>
+        </Col>
+        <Col span={8} offset={1}>
+          <div className="Stream-container" id="subscribe">
+            <div className="Video-container">
+              {subToken && <Subscriber appId={AppID} streamId={StreamID} appKey={AppKey} token={subToken}></Subscriber>}
+            </div>
+            <Space className="Button-mute-group">
+              <IconVideoCamera style={{fontSize: 36, color: muteRemoteVideo ? '#b6b6b6' : '#FFF'}}
+               onClick={() => {
+                 handleMuteRemote(!muteRemoteVideo, 'video');
+               }}
+              />
+              <IconVoice style={{fontSize: 30, color: muteRemoteAudio ? '#b6b6b6' : '#FFF'}}
+               onClick={() => {
+                 handleMuteRemote(!muteRemoteAudio, 'audio');
+               }}
+              />
+            </Space>
+            <div className="Contrainer-bottom">
+              <Space direction="horizontal" size="medium">
+                <Button className="Button-push" type="primary" onClick={handleSubBtnClick} disabled={pullState === PullState.pulling}>
+                  {pullState === PullState.pulled ? 'Stop Pull' : 'Start Pull'}
+                </Button>
+              </Space>
+            </div>
+          </div>
+        </Col>
       </Row>
     </div>
   );

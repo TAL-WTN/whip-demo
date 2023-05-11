@@ -84,10 +84,8 @@ const Subscriber = (props: { streamId: string, appKey: string, appId: string, to
 
 
   return (
-    <div className="Stream-container">
-      <div className="Video-container">
-        <video className="renderDom" autoPlay playsInline ref={videoRef} muted></video>
-      </div>
+    <>
+      <video className="renderDom" autoPlay playsInline ref={videoRef} muted></video>
       <div className="Video-info">
         <p id="ICE">Conn State：{iceState}</p>
         <p id="Resolution">
@@ -110,26 +108,7 @@ const Subscriber = (props: { streamId: string, appKey: string, appId: string, to
             : ''}
         </p>
       </div>
-      <Space className="Button-mute-group">
-        <IconVideoCamera style={{fontSize: 36, color: MuteVideo ? '#b6b6b6' : '#FFF'}}
-           onClick={() => {
-             handleMute(!MuteVideo, 'video');
-           }}
-        />
-        <IconVoice style={{fontSize: 30, color: MuteAudio ? '#b6b6b6' : '#FFF'}}
-           onClick={() => {
-             handleMute(!MuteAudio, 'audio');
-           }}
-        />
-      </Space>
-      <div className="Contrainer-bottom">
-        <Space direction="horizontal" size="medium">
-          <Button className="Button-push" type="primary" onClick={handleSubBtnClick}>
-            {pullState ? 'Stop Pull' : 'Start Pull'}
-          </Button>
-        </Space>
-      </div>
-    </div>
+    </>
   );
 };
 

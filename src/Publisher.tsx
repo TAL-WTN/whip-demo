@@ -126,10 +126,8 @@ function Publisher(props: {appId?: string, appKey?: string, streamId?: string, P
     }
   }, [pushState])
   return (
-    <div className="Stream-container">
-      <div className="Video-container">
-        <video className="renderDom" autoPlay playsInline ref={videoRef} muted></video>
-      </div>
+    <>
+      <video className="renderDom" autoPlay playsInline ref={videoRef} muted></video>
       <div className="Video-info">
         <p id="ICE">Conn State：{iceState}</p>
         <p id="Resolution">
@@ -152,26 +150,7 @@ function Publisher(props: {appId?: string, appKey?: string, streamId?: string, P
             : ''}
         </p>
       </div>
-      <Space className="Button-mute-group">
-        <IconVideoCamera style={{fontSize: 36, color: MuteVideo ? '#b6b6b6' : '#FFF'}}
-          onClick={() => {
-            handleMute(!MuteVideo, 'video');
-          }}
-        />
-        <IconVoice style={{fontSize: 30, color: MuteAudio ? '#b6b6b6' : '#FFF'}}
-          onClick={() => {
-            handleMute(!MuteAudio, 'audio');
-          }}
-        />
-      </Space>
-      <div className="Contrainer-bottom">
-        <Space direction="horizontal" size="medium">
-          <Button className="Button-push" type="primary" onClick={handlePubBtnClick}>
-            {pushState ? 'Stop Push' : 'Start Push'}
-          </Button>
-        </Space>
-      </div>
-    </div>
+    </>
   );
 }
 
