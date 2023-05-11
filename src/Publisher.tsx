@@ -1,12 +1,11 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import { Button, Space, Switch, Input, Message } from "@arco-design/web-react";
-import {IconRefresh, IconVideoCamera, IconVoice} from '@arco-design/web-react/icon';
+import { Message } from "@arco-design/web-react";
 
 import { v4 as uuid } from "uuid";
 import { PromiseLock, getAudioStats, getVideoStats, sleep } from './util';
 import { usePublish } from "whip-sdk-react";
 
-function Publisher(props: {appId?: string, appKey?: string, streamId?: string, PullAuth?: boolean, parameter?: string, token: string}) {
+function Publisher(props: {streamId: string, PullAuth?: boolean, token: string}) {
   const _pubLock = new PromiseLock();
 
   if (!props.token) {

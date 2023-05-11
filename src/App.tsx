@@ -1,4 +1,4 @@
-import {useState, useEffect, useMemo, useCallback} from 'react';
+import {useState, useCallback} from 'react';
 import {
   PageHeader,
   Grid, Input, Space, Button,
@@ -8,7 +8,7 @@ import { generateToken, getUrlPrmt } from './util';
 import Publisher from './Publisher';
 import Subscriber from './Subscriber';
 import {IconRefresh, IconVideoCamera, IconVoice} from '@arco-design/web-react/icon';
-
+import {AppID, AppKey} from './config';
 import './App.css';
 
 const Row = Grid.Row;
@@ -29,8 +29,6 @@ enum PullState {
 function App() {
   const queryObject = getUrlPrmt();
 
-  const [ AppID, setAppID ] = useState(queryObject.AppID || "bc22d5");
-  const [ AppKey, setAppKey ] = useState(queryObject.AppKey || "00eec858271ea752");
   const [ StreamID, setStreamID ] = useState(queryObject.StreamID || uuid());
   const [ pubToken, setPubToken ] = useState("");
   const [ subToken, setSubToken ] = useState("");
@@ -114,7 +112,7 @@ function App() {
         <Col span={8} >
           <div className="Stream-container" id="publish">
             <div className="Video-container">
-              {pubToken && <Publisher appId={AppID} streamId={StreamID} appKey={AppKey} token={pubToken}></Publisher>}
+              {pubToken && <Publisher streamId={StreamID} token={pubToken}></Publisher>}
             </div>
             <Space className="Button-mute-group">
               <IconVideoCamera style={{fontSize: 36, color: muteLocalVideo ? '#b6b6b6' : '#FFF'}}
@@ -140,7 +138,7 @@ function App() {
         <Col span={8} offset={1}>
           <div className="Stream-container" id="subscribe">
             <div className="Video-container">
-              {subToken && <Subscriber appId={AppID} streamId={StreamID} appKey={AppKey} token={subToken}></Subscriber>}
+              {subToken && <Subscriber streamId={StreamID} token={subToken}></Subscriber>}
             </div>
             <Space className="Button-mute-group">
               <IconVideoCamera style={{fontSize: 36, color: muteRemoteVideo ? '#b6b6b6' : '#FFF'}}

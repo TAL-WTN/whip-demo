@@ -6,81 +6,17 @@ import {IconRefresh, IconVideoCamera, IconVoice} from '@arco-design/web-react/ic
 import {v4 as uuid} from 'uuid';
 import {generateToken} from './util';
 
-const Subscriber = (props: { streamId: string, appKey: string, appId: string, token: string }) => {
+const Subscriber = (props: { streamId: string, token: string }) => {
   const [videoStream, setVideoStream] = useState<MediaStream>();
   // const subscriber = useSubscribe(props.token);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [ AppID, setAppID ] = useState(props.appId);
-  const [ AppKey, setAppKey ] = useState(props.appKey);
-  const [ StreamID, setStreamID ] = useState(props.streamId || uuid());
-
-  const [ MuteAudio, setMuteAudio ] = useState(false);
-  const [ MuteVideo, setMuteVideo ] = useState(false);
-  const [ PullAuth, setPullAuth ] = useState(true);
-  const [ ClientIp, setClientIp ] = useState("");
   const [ iceState, setIceState ] = useState("");
-  const [ pullState, setPullState ] = useState(false);
-  const [ dtlsAudioState, setDtlsAudioState ] = useState("");
-  const [ dtlsVideoState, setDtlsVideoState ] = useState("");
-  const [ captureResolution, setCaptureResolution ] = useState("");
   const [ resolution, setResolution ] = useState("");
   const [ frameRate, setFrameRate ] = useState("");
   const [ codeRate, setCodeRate ] = useState("");
   const [ volume, setVolume ] = useState("");
-  const [ parameter, setParameter ] = useState("");
-  const [ requestList, setRequestList ] = useState([]);
   const [ errorMessage, setErrorMessage ] = useState("");
-  const [ visibility, setVisibility ] = useState(false);
-  const [ token, setToken ] = useState<string>();
-
-
-
-  const handleMute = useCallback((mute: boolean, kind: 'video' | 'audio') => {
-    switch (kind) {
-      case 'video':
-        setMuteVideo(mute);
-        // subscriber.mute(mute, 'video');
-        break;
-      case 'audio':
-        setMuteAudio(mute);
-        // subscriber.mute(mute, 'audio');
-        break;
-    }
-  }, []);
-  //
-  // useEffect(() => {
-  //   // return () => {
-  //   //   subscriber.stop();
-  //   // };
-  // }, [props.token])
-  //
-  //
-  // useEffect(() => {
-  //   if (subscriber.videoTrack) {
-  //     const stream = new MediaStream();
-  //     stream.addTrack(subscriber.videoTrack);
-  //     setVideoStream(stream);
-  //   }
-  // }, [subscriber.videoTrack]);
-  //
-  // useEffect(() => {
-  //   if(videoRef.current && videoStream) {
-  //     videoRef.current.srcObject = videoStream;
-  //   }
-  // }, [videoRef, videoStream]);
-
-  const handleSubBtnClick = useCallback(async () => {
-    if(visibility) {
-      setToken('');
-      setVisibility(false);
-    } else {
-      //step 1: start subscribe
-      const pullToken = await generateToken({AppID, AppKey, StreamID, Action: 'sub'});
-      setToken(pullToken);
-      setVisibility(true);
-    }
-  }, [AppID, AppKey, StreamID, visibility]);
 
 
   return (
