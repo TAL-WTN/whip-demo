@@ -18,5 +18,5 @@ code {
 }
 #root{
   width: 100%;
-  height: calc(100% - 21px);
+  height: 100%;
 }
