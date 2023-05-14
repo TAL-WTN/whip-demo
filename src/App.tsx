@@ -61,6 +61,11 @@ function App() {
   }, []);
 
   const handlePubBtnClick = useCallback(() => {
+    if (pushState === PushState.pushed) {
+      setPubToken("");
+      setPushState(PushState.stopped);
+      return;
+    }
     setPushState(PushState.pushing);
     generateToken({
       AppID,
@@ -76,7 +81,14 @@ function App() {
     })
   }, []);
   const handleSubBtnClick = useCallback(() => {
-    setPushState(PushState.pushing);
+    console.log('handleSubBtnClick', pullState);
+    if (pullState === PullState.pulled) {
+      setSubToken("");
+      setPullState(PullState.stopped);
+      return;
+    }
+    setPullState(PullState.pulling);
+
     generateToken({
       AppID,
       StreamID,
@@ -84,11 +96,11 @@ function App() {
       AppKey,
     }).then((token) => {
       setSubToken(token);
-      setPushState(PushState.pushed);
+      setPullState(PullState.pulled);
     }).catch(() => {
-      setPushState(PushState.stopped);
+      setPullState(PullState.stopped);
     })
-  }, []);
+  }, [pullState]);
   return (
     <div className="Page">
       <PageHeader title="Welcome to the WTN Demo" className="Header" style={{color: '#FFF'}} />
@@ -138,7 +150,7 @@ function App() {
         <Col span={8} offset={1}>
           <div className="Stream-container" id="subscribe">
             <div className="Video-container">
-              {subToken && <Subscriber streamId={StreamID} token={subToken}></Subscriber>}
+              {subToken && <Subscriber streamId={StreamID} token={subToken} muteAudio={muteRemoteAudio} muteVideo={muteRemoteVideo}></Subscriber>}
             </div>
             <Space className="Button-mute-group">
               <IconVideoCamera style={{fontSize: 36, color: muteRemoteVideo ? '#b6b6b6' : '#FFF'}}

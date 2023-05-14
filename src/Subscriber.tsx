@@ -1,16 +1,10 @@
-import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {useSubscribe} from 'whip-sdk-react';
 import './App.css';
-import {Button, Input, Space} from '@arco-design/web-react';
-import {IconRefresh, IconVideoCamera, IconVoice} from '@arco-design/web-react/icon';
-import {v4 as uuid} from 'uuid';
-import {generateToken} from './util';
 
-const Subscriber = (props: { streamId: string, token: string }) => {
-  const [videoStream, setVideoStream] = useState<MediaStream>();
-  // const subscriber = useSubscribe(props.token);
+const Subscriber = (props: { streamId: string, token: string, muteVideo: boolean, muteAudio: boolean }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-
+  const subscriber = useRef(useSubscribe(props.token)).current;
   const [ iceState, setIceState ] = useState("");
   const [ resolution, setResolution ] = useState("");
   const [ frameRate, setFrameRate ] = useState("");
@@ -19,9 +13,32 @@ const Subscriber = (props: { streamId: string, token: string }) => {
   const [ errorMessage, setErrorMessage ] = useState("");
 
 
+  useEffect(() => {
+    const stream = subscriber.subscribe();
+    console.log('stream', stream);
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play();
+    }
+    return () => {
+      subscriber.unsubscribe()
+    };
+  }, [])
+
+  useLayoutEffect(() => {
+    if (videoRef.current?.srcObject) {
+      subscriber.mute(props.muteVideo, 'video');
+    }
+  }, [props.muteVideo])
+
+  useLayoutEffect(() => {if (videoRef.current?.srcObject) {
+    subscriber.mute(props.muteAudio, 'audio');
+  }
+  }, [props.muteAudio])
+
   return (
     <>
-      <video className="renderDom" autoPlay playsInline ref={videoRef} muted></video>
+      <video className="renderDom" autoPlay playsInline ref={videoRef} controls />
       <div className="Video-info">
         <p id="ICE">Conn State：{iceState}</p>
         <p id="Resolution">

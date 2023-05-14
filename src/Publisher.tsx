@@ -111,19 +111,23 @@ function Publisher(props: {streamId: string, PullAuth?: boolean, token: string})
   }, [video, audio]);
 
   useEffect(() => {
+    startPush().then(() => {
+      setPushState(true);
+    });
+    return () => {
+      stopPush().then(() => {
+        setPushState(false);
+      });
+    }
+  }, [])
+
+  useEffect(() => {
     if (pushState && audio && video) {
       startStatsLoop(audio, video)
     }
   }, [ pushState, audio, video ])
 
 
-  const handlePubBtnClick = useCallback(() => {
-    if (pushState) {
-      stopPush();
-    } else {
-      startPush();
-    }
-  }, [pushState])
   return (
     <>
       <video className="renderDom" autoPlay playsInline ref={videoRef} muted></video>
