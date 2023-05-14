@@ -79,7 +79,7 @@ function App() {
     }).catch(() => {
       setPushState(PushState.stopped);
     })
-  }, []);
+  }, [pushState]);
   const handleSubBtnClick = useCallback(() => {
     console.log('handleSubBtnClick', pullState);
     if (pullState === PullState.pulled) {
@@ -124,7 +124,7 @@ function App() {
         <Col span={8} >
           <div className="Stream-container" id="publish">
             <div className="Video-container">
-              {pubToken && <Publisher streamId={StreamID} token={pubToken}></Publisher>}
+              {pubToken && <Publisher streamId={StreamID} token={pubToken} muteVideo={muteLocalVideo} muteAudio={muteLocalAudio}></Publisher>}
             </div>
             <Space className="Button-mute-group">
               <IconVideoCamera style={{fontSize: 36, color: muteLocalVideo ? '#b6b6b6' : '#FFF'}}
