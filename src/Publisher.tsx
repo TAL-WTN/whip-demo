@@ -1,18 +1,14 @@
 import {memo, useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import { Message } from "@arco-design/web-react";
 
-import { v4 as uuid } from "uuid";
-import { PromiseLock, getAudioStats, getVideoStats, sleep } from './util';
+import { getAudioStats, getVideoStats, sleep } from './util';
 import { usePublish } from "whip-sdk-react";
 import VideoInfo from './VideoInfo';
 
 function Publisher(props: {streamId: string,  token: string, muteVideo: boolean, muteAudio: boolean}) {
-  const _pubLock = new PromiseLock();
-
   if (!props.token) {
     throw new Error("Token is required")
   }
-  const SessionID = useRef(uuid()).current;
 
   const [ pushState, setPushState ] = useState(false);
   const [ iceState, setIceState ] = useState("");
@@ -38,11 +34,11 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     const video = stream.getVideoTracks()[0];
 
     if (!audio) {
-      throw new Error("获取麦克风失败")
+      throw new Error("Failed to get audio track");
     }
 
     if (!video) {
-      throw new Error("获取摄像头失败")
+      throw new Error("Failed to get video track")
     }
 
     if (videoRef.current) {
@@ -54,9 +50,9 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
 
   // step 3: call publish function to publish stream
   const startPush = useCallback(async () => {
-    if (!props.streamId || !SessionID) {
-      setErrorMessage("参数不全");
-      Message.error("参数不全");
+    if (!props.streamId) {
+      setErrorMessage("StreamId is required");
+      Message.error("StreamId is required");
       return;
     }
     const { audio, video } = await startCapture();
@@ -64,7 +60,7 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     setVideo(video);
     await publish(audio, video);
     setPushState(true);
-  }, [props.streamId, SessionID, publish])
+  }, [props.streamId, publish])
 
   // step 4: call unpublish function to stop publish stream
   const stopPush = useCallback( async () => {
@@ -73,9 +69,9 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     audio?.stop();
     video?.stop();
     videoRef.current && (videoRef.current.srcObject = null);
-  }, [video, audio])
+  }, [video, audio, unpublish])
 
-  const startStatsLoop = async (audio: MediaStreamTrack, video: MediaStreamTrack) => {
+  const startStatsLoop = useCallback(async (audio: MediaStreamTrack, video: MediaStreamTrack) => {
     if (!pushState) {
       return;
     }
@@ -90,7 +86,7 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     startStatsLoop(audio, video);
 
     setIceState(pc.iceConnectionState);
-  }
+  }, [pushState, getPeerConnection])
 
   useEffect(() => {
     startPush().then(() => {
@@ -114,7 +110,7 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     if (pushState && audio && video) {
       startStatsLoop(audio, video)
     }
-  }, [pushState])
+  }, [pushState, audio, video, startStatsLoop])
 
   // mute video
   useLayoutEffect(() => {
@@ -122,14 +118,14 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     if (pushState) {
       mute(props.muteVideo, 'video');
     }
-  }, [props.muteVideo])
+  }, [props.muteVideo, mute, pushState])
   // mute audio
   useLayoutEffect(() => {
     console.log(pushState, props.muteAudio, 'props.muteAudio');
     if (pushState) {
       mute(props.muteAudio, 'audio');
     }
-  }, [props.muteAudio])
+  }, [props.muteAudio, mute, pushState])
 
   return (
     <>

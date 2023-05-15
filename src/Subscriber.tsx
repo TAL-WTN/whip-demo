@@ -18,16 +18,19 @@ const Subscriber = (props: { streamId: string, token: string, muteVideo: boolean
   // step 1: call useSubscribe hook to get subscribe function
   const subscriber = useRef(useSubscribe(props.token)).current;
 
-  // 获取音频和视频流的resolution、frameRate、codeRate、volume状态，并获取ice connectState
+  /**
+   * Display the media statistics of the audio and video streams,
+   * including resolution, frame rate, code rate, and volume status.
+   */
   const getStats = useCallback(async (stream: MediaStream) => {
     const pc = await subscriber.getPeerConnection();
-    // 获取PeerConnection的ice连接状态
+    // Display the ICE connection status
     setIceState(pc.iceConnectionState);
     const stats = await pc.getStats();
     stats.forEach((value, key) => {
       if (value.type === 'inbound-rtp' && value.mediaType === 'audio') {
         const { audioLevel } = value;
-        // 保留两位小数
+        // Display the volume status
         setVolume(audioLevel.toFixed(2));
       }
     });
