@@ -115,7 +115,9 @@ export async function getVideoStats(pc: RTCPeerConnection, track: MediaStreamTra
   const prev = videoStatsMap.get(track) || {
     timestamp: 0,
     headerBytesSent: 0,
-    bytesSent: 0
+    bytesSent: 0,
+    headerBytesReceived: 0,
+    bytesReceived: 0,
   };
   const stats = await pc.getStats(track);
   const result = {
@@ -130,6 +132,15 @@ export async function getVideoStats(pc: RTCPeerConnection, track: MediaStreamTra
 
       const duration = report.timestamp - prev.timestamp;
       result.vbps = Math.floor(8* (report.bytesSent + report.headerBytesSent - prev.bytesSent - prev.headerBytesSent) / duration) + ' Kbps';
+      videoStatsMap.set(track, report);
+    }
+
+    if (report.type === "inbound-rtp") {
+      result.resolution = String(report.frameWidth) + "*" + String(report.frameHeight);
+      result.fps = report.framesPerSecond;
+
+      const duration = report.timestamp - prev.timestamp;
+      result.vbps = Math.floor(8* (report.bytesReceived + report.headerBytesReceived - prev.bytesReceived - prev.headerBytesReceived) / duration) + ' Kbps';
       videoStatsMap.set(track, report);
     }
   });

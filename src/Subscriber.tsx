@@ -2,6 +2,7 @@ import {memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState
 import {useSubscribe} from 'whip-sdk-react';
 import './App.css';
 import VideoInfo from './VideoInfo';
+import { getVideoStats } from './util';
 
 
 
@@ -16,24 +17,25 @@ const Subscriber = (props: { streamId: string, token: string, muteVideo: boolean
   const [ errorMessage, setErrorMessage ] = useState("");
 
   // 获取音频和视频流的resolution、frameRate、codeRate、volume状态，并获取ice connectState
-  const getStats = useCallback(async () => {
+  const getStats = useCallback(async (stream: MediaStream) => {
     const pc = await subscriber.getPeerConnection();
     // 获取PeerConnection的ice连接状态
     setIceState(pc.iceConnectionState);
     const stats = await pc.getStats();
     stats.forEach((value, key) => {
-      if (value.type === 'inbound-rtp' && value.mediaType === 'video') {
-        const { frameWidth, frameHeight, framesPerSecond, bytesReceived } = value;
-        setResolution(`${frameWidth}*${frameHeight}`);
-        setFrameRate(framesPerSecond);
-        setCodeRate(`${bytesReceived * 8 / 1000}kbps`);
-      }
       if (value.type === 'inbound-rtp' && value.mediaType === 'audio') {
         const { audioLevel } = value;
         // 保留两位小数
         setVolume(audioLevel.toFixed(2));
       }
     });
+    const videoTrack = stream.getVideoTracks()[0];
+    if (videoTrack) {
+      const videoStats = await getVideoStats(pc, videoTrack);
+      setCodeRate(videoStats.vbps.toString());
+      setFrameRate(videoStats.fps);
+      setResolution(videoStats.resolution);
+    }
   }, [subscriber]);
 
 
@@ -45,7 +47,7 @@ const Subscriber = (props: { streamId: string, token: string, muteVideo: boolean
     }
 
     setInterval(() => {
-      getStats();
+      getStats(stream);
     }, 1000);
     return () => {
       subscriber.unsubscribe()
