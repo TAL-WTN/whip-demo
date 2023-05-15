@@ -14,7 +14,6 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
   }
   const SessionID = useRef(uuid()).current;
 
-  const [ StreamID, setStreamID ] = useState(props.streamId || uuid());
   const [ pushState, setPushState ] = useState(false);
   const [ iceState, setIceState ] = useState("");
   const [ resolution, setResolution ] = useState("");
@@ -25,8 +24,10 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ audio, setAudio ] = useState<MediaStreamTrack | null>(null);
   const [ video, setVideo ] = useState<MediaStreamTrack | null>(null);
+  // step 1: call usePublish hook to get publish function
   const { publish, mute, unpublish, getPeerConnection } = useRef(usePublish(props.token)).current;
 
+  // step 2: call getUserMedia to get audio and video stream
   const startCapture = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
@@ -50,8 +51,10 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     }
     return { audio, video };
   }
+
+  // step 3: call publish function to publish stream
   const startPush = useCallback(async () => {
-    if (!StreamID || !SessionID) {
+    if (!props.streamId || !SessionID) {
       setErrorMessage("参数不全");
       Message.error("参数不全");
       return;
@@ -61,8 +64,9 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     setVideo(video);
     await publish(audio, video);
     setPushState(true);
-  }, [StreamID, SessionID, publish])
+  }, [props.streamId, SessionID, publish])
 
+  // step 4: call unpublish function to stop publish stream
   const stopPush = useCallback( async () => {
     await unpublish();
     setPushState(false);
@@ -112,13 +116,14 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     }
   }, [pushState])
 
+  // mute video
   useLayoutEffect(() => {
     console.log(pushState, props.muteVideo, 'props.muteVideo');
     if (pushState) {
       mute(props.muteVideo, 'video');
     }
   }, [props.muteVideo])
-
+  // mute audio
   useLayoutEffect(() => {
     console.log(pushState, props.muteAudio, 'props.muteAudio');
     if (pushState) {
