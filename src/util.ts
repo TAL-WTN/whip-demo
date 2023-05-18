@@ -106,6 +106,10 @@ export async function getAudioStats(pc: RTCPeerConnection, track: MediaStreamTra
     if (report.type === "media-source") {
       result.volume = Number((report.audioLevel ? report.audioLevel : 0) * 255).toFixed(6);
     }
+
+    if (report.type === "inbound-rtp") {
+      result.volume = Number((report.audioLevel ? report.audioLevel : 0) * 255).toFixed(6);
+    }
   });
   return result;
 }
