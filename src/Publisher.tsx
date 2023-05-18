@@ -1,7 +1,5 @@
 import {memo, useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import { Message } from "@arco-design/web-react";
-
-import { getAudioStats, getVideoStats, sleep } from './util';
 import { usePublish } from "whip-sdk-react";
 import VideoInfo from './VideoInfo';
 
@@ -11,15 +9,13 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
   }
 
   const [ pushState, setPushState ] = useState(false);
-  const [ iceState, setIceState ] = useState("");
-  const [ resolution, setResolution ] = useState("");
-  const [ frameRate, setFrameRate ] = useState("");
-  const [ codeRate, setCodeRate ] = useState("");
-  const [ volume, setVolume ] = useState("");
   const [ errorMessage, setErrorMessage ] = useState("");
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [ audio, setAudio ] = useState<MediaStreamTrack | null>(null);
   const [ video, setVideo ] = useState<MediaStreamTrack | null>(null);
+  const [ stream, setStream ] = useState<MediaStream | undefined>();
+  const [ pc, setPc ] = useState<RTCPeerConnection | undefined>();
+
+  const videoRef = useRef<HTMLVideoElement>(null);
   // step 1: call usePublish hook to get publish function
   const { publish, mute, unpublish, getPeerConnection } = useRef(usePublish(props.token)).current;
 
@@ -30,6 +26,7 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
       video: true,
     })
 
+    setStream(stream);
     const audio = stream.getAudioTracks()[0];
     const video = stream.getVideoTracks()[0];
 
@@ -59,6 +56,7 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     setAudio(audio);
     setVideo(video);
     await publish(audio, video);
+    setPc(getPeerConnection());
     setPushState(true);
   }, [props.streamId, publish])
 
@@ -70,23 +68,6 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     video?.stop();
     videoRef.current && (videoRef.current.srcObject = null);
   }, [video, audio, unpublish])
-
-  const startStatsLoop = useCallback(async (audio: MediaStreamTrack, video: MediaStreamTrack) => {
-    if (!pushState) {
-      return;
-    }
-    const pc = getPeerConnection();
-    const audioStats = await getAudioStats(pc, audio);
-    const videoStats = await getVideoStats(pc, video);
-    setVolume(audioStats.volume);
-    setCodeRate(videoStats.vbps.toString());
-    setFrameRate(videoStats.fps);
-    setResolution(videoStats.resolution);
-    await sleep(1000);
-    startStatsLoop(audio, video);
-
-    setIceState(pc.iceConnectionState);
-  }, [pushState, getPeerConnection])
 
   useEffect(() => {
     startPush().then(() => {
@@ -106,12 +87,6 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
     };
   }, [video,audio]);
 
-  useLayoutEffect(() => {
-    if (pushState && audio && video) {
-      startStatsLoop(audio, video)
-    }
-  }, [pushState, audio, video, startStatsLoop])
-
   // mute video
   useLayoutEffect(() => {
     console.log(pushState, props.muteVideo, 'props.muteVideo');
@@ -130,7 +105,7 @@ function Publisher(props: {streamId: string,  token: string, muteVideo: boolean,
   return (
     <>
       <video className="renderDom" autoPlay playsInline ref={videoRef} muted></video>
-      <VideoInfo codeRate={codeRate} frameRate={frameRate} iceState={iceState} volume={volume} resolution={resolution} errorMessage={errorMessage} />
+      <VideoInfo pc={pc} stream={stream} errorMessage={errorMessage} />
     </>
   );
 }

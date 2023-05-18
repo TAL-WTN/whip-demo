@@ -1,65 +1,34 @@
-import {memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {memo, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useSubscribe} from 'whip-sdk-react';
 import './App.css';
 import VideoInfo from './VideoInfo';
-import { getVideoStats } from './util';
 
 
 
 const Subscriber = (props: { streamId: string, token: string, muteVideo: boolean, muteAudio: boolean }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [ iceState, setIceState ] = useState("");
-  const [ resolution, setResolution ] = useState("");
-  const [ frameRate, setFrameRate ] = useState("");
-  const [ codeRate, setCodeRate ] = useState("");
-  const [ volume, setVolume ] = useState("");
+  const [ stream, setStream ] = useState<MediaStream | undefined>();
+  const [ pc, setPc ] = useState<RTCPeerConnection | undefined>();
   const [ errorMessage, setErrorMessage ] = useState("");
   // step 1: call useSubscribe hook to get subscribe function
   const subscriber = useRef(useSubscribe(props.token)).current;
 
-  /**
-   * Display the media statistics of the audio and video streams,
-   * including resolution, frame rate, code rate, and volume status.
-   */
-  const getStats = useCallback(async (stream: MediaStream) => {
-    const pc = await subscriber.getPeerConnection();
-    // Display the ICE connection status
-    setIceState(pc.iceConnectionState);
-    const stats = await pc.getStats();
-    stats.forEach((value, key) => {
-      if (value.type === 'inbound-rtp' && value.mediaType === 'audio') {
-        const { audioLevel } = value;
-        // Display the volume status
-        setVolume(audioLevel.toFixed(2));
-      }
-    });
-    const videoTrack = stream.getVideoTracks()[0];
-    if (videoTrack) {
-      const videoStats = await getVideoStats(pc, videoTrack);
-      setCodeRate(videoStats.vbps.toString());
-      setFrameRate(videoStats.fps);
-      setResolution(videoStats.resolution);
-    }
-  }, [subscriber]);
-
-
   useEffect(() => {
     // step 2: call subscribe function to subscribe stream
     const stream = subscriber.subscribe();
+    setStream(stream);
+    setPc(subscriber.getPeerConnection());
     if (videoRef.current) {
       // step 3: set stream to video element to render remote stream
       videoRef.current.srcObject = stream;
       videoRef.current.play();
     }
 
-    setInterval(() => {
-      getStats(stream);
-    }, 1000);
     return () => {
       subscriber.unsubscribe()
     };
-  }, [])
+  }, [subscriber]);
 
   // mute video
   useLayoutEffect(() => {
@@ -77,8 +46,8 @@ const Subscriber = (props: { streamId: string, token: string, muteVideo: boolean
 
   return (
     <>
-      <video className="renderDom" autoPlay playsInline ref={videoRef} controls />
-      <VideoInfo codeRate={codeRate} frameRate={frameRate} iceState={iceState} volume={volume} resolution={resolution} errorMessage={errorMessage} />
+      <video className="renderDom" autoPlay playsInline ref={videoRef} />
+      <VideoInfo pc={pc} stream={stream} errorMessage={errorMessage} />
     </>
   );
 };
